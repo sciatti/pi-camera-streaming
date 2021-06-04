@@ -1,0 +1,2 @@
+use in terminal to set display port for vcxsrv to work properly:
+export DISPLAY=$(cat /etc/resolv.conf | grep nameserver | awk '{print $2}'):0
