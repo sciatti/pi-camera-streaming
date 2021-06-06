@@ -4,28 +4,37 @@ import cv2
 import pickle
 import numpy as np
 import struct ## new
+import time
+import atexit
 
-HOST=''
+def cleanUp(sock):
+    print('closing socket')
+    sock.close()
+    print('socket closed')
+
+HOST=socket.gethostbyname(socket.gethostname() + '.local')
 PORT=8089
 
-clientsocket=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-clientsocket.connect(('localhost',8089))
+s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+print('Socket created')
 
-### new
-data = ""
-payload_size = struct.calcsize("H") 
+s.bind((HOST,PORT))
+print('Socket bound to ', (HOST,PORT))
+s.listen(10)
+print('Socket now listening')
+
+conn,addr=s.accept()
+
+atexit.register(cleanUp, conn)
+
+cap=cv2.VideoCapture(0)
 while True:
-    while len(data) < payload_size:
-        data += clientsocket.recv(4096)
-    packed_msg_size = data[:payload_size]
-    data = data[payload_size:]
-    msg_size = struct.unpack("H", packed_msg_size)[0]
-    while len(data) < msg_size:
-        data += clientsocket.recv(4096)
-    frame_data = data[:msg_size]
-    data = data[msg_size:]
-    ###
-
-    frame=pickle.loads(frame_data)
-    print(frame)
-    cv2.imshow('frame',frame)
+    ret,frame=cap.read()
+    frame = cv2.resize(frame, (100, 100))
+    data = pickle.dumps(frame) ### new code
+    print('len of data: ', len(data))
+    x = struct.pack("H", len(data))
+    conn.sendall(x+data) ### new code
+    # send frames 16 times every second 
+    time.sleep(0.0625)
+    # TODO: Figure out a better way to record at 16 fps?

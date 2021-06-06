@@ -6,9 +6,11 @@ import numpy as np
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 #s.connect(('172.29.108.89', 12345))
 s.connect(('192.168.1.123', 12345))
-datum = s.recv(4096)
-print("data received: ", len(datum))
+data = []
 while True:
+    datum = s.recv(4096)
+    print("data received: ", len(datum))
+    if not datum: break
     data = []
     # scan for the initial size
     if b'size=' in datum:
@@ -38,20 +40,20 @@ while True:
         if b'size=' in data[-1]:
             data[-1] = data[-1][ : data[-1].index('size=')]
         
-        # append the image into one contiguous byte array
-        for i in range(1, len(data)):
-            data[0] = data[0] + data[i]
+# append the image into one contiguous byte array
+for i in range(1, len(data)):
+    data[0] = data[0] + data[i]
 #        file = open('writeback', 'w')
 #        file.write(str(data[0]))
 #        file.close()
-        # decode from byte array to buffer/string
-        img = base64.b64decode(data[0])
-        # cast to numpy array from buffer
-        npimg = np.frombuffer(img, dtype=np.uint8)
+# decode from byte array to buffer/string
+img = base64.b64decode(data[0])
+# cast to numpy array from buffer
+npimg = np.frombuffer(img, dtype=np.uint8)
 #        print(npimg)
-        # create image from numpy array
-        source = cv2.imdecode(npimg, 1)
-        # display image
+# create image from numpy array
+source = cv2.imdecode(npimg, 1)
+# display image
 #        cv2.imwrite('cam_shot_' + cnt + '.jpg', source)
-        cv2.imshow("Stream", source)
-        cv2.waitKey(1)
+cv2.imshow("Stream", source)
+cv2.waitKey(1)
