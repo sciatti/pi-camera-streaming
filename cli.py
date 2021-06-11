@@ -8,14 +8,14 @@ clientsocket=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 clientsocket.connect(('192.168.0.140',8089))
 ### new
 data = bytes()
-payload_size = struct.calcsize("H") 
+payload_size = struct.calcsize("I") 
 cnt = 0
 while True:
     while len(data) < payload_size:
         data = data + clientsocket.recv(4096)
     packed_msg_size = data[:payload_size]
     data = data[payload_size:]
-    x = struct.unpack("H", packed_msg_size)
+    x = struct.unpack("I", packed_msg_size)
     msg_size = x[0]
     print(x)
     while len(data) < msg_size:

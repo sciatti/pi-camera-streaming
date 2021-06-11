@@ -30,11 +30,9 @@ atexit.register(cleanUp, conn)
 cap=cv2.VideoCapture(0)
 while True:
     ret,frame=cap.read()
-    frame = cv2.resize(frame, (100, 100))
+    #frame = cv2.resize(frame, (400, 400))
     data = pickle.dumps(frame) ### new code
     print('len of data: ', len(data))
-    x = struct.pack("H", len(data))
+    x = struct.pack("I", len(data))
     conn.sendall(x+data) ### new code
-    # send frames 16 times every second 
     time.sleep(0.0625)
-    # TODO: Figure out a better way to record at 16 fps?
