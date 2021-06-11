@@ -9,7 +9,6 @@ from collections import deque
 
 def motion_capture():
     fourcc = cv2.VideoWriter_fourcc(*"H264")
-    dims = (cv2.CAP_PROP_FRAME_WIDTH, cv2.CAP_PROP_FRAME_HEIGHT)
     frame_stack = deque()
     # Capturing video
     video = cv2.VideoCapture(0)
@@ -19,14 +18,14 @@ def motion_capture():
     #create the background frame
     # Read the first frame from video
     check, frame = video.read()
-
+    dims = (frame.shape[1], frame.shape[0])
     # Converting color image to gray_scale image
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
     # Converting gray scale image to GaussianBlur
     # so that change can be found easily
     static_back = cv2.GaussianBlur(gray, (21, 21), 0)
-
+    time.sleep(0.2)
     # Infinite while loop to treat stack of image as video
     while True:
         motion = False
@@ -75,6 +74,8 @@ def motion_capture():
             frame_stack.append(frame)
             #v = cv2.VideoWriter(str(int(time.time())) + '.mp4', cv2.VideoWriter_fourcc('f', 'f', 'v', '1'), cv2.CAP_PROP_FPS, frame_stack[0].shape, True)
             fname = str(int(time.time()))
+            print(dims)
+            print(type(frame))
             v = cv2.VideoWriter(fname + '.avi', fourcc, 5, dims, True)
             # Define the codec and create VideoWriter object
             for i in range(len(frame_stack)):
