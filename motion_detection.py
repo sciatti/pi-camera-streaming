@@ -9,7 +9,7 @@ from collections import deque
 
 def motion_capture():
     fourcc = cv2.VideoWriter_fourcc(*"H264")
-    frame_stack = deque()
+    frame_queue = deque()
     # Capturing video
     video = cv2.VideoCapture(0)
 
@@ -64,28 +64,30 @@ def motion_capture():
         # if we have something detected on screen
         if motion == True:
         # Appending current frame which has motion in it to the frame array
-            frame_stack.append(frame)
+            frame_queue.append(frame)
             print("motion detected")
-            time.sleep(1/5)
+            time.sleep(1/15)
 
         # if we dont have something detected on screen
-        elif motion == False and len(frame_stack) > 0:
+        elif motion == False and len(frame_queue) > 0:
             # motion has stopped, append this frame to the stack then write it out to disk and clear the stack
-            frame_stack.append(frame)
-            #v = cv2.VideoWriter(str(int(time.time())) + '.mp4', cv2.VideoWriter_fourcc('f', 'f', 'v', '1'), cv2.CAP_PROP_FPS, frame_stack[0].shape, True)
+            frame_queue.append(frame)
+            #v = cv2.VideoWriter(str(int(time.time())) + '.mp4', cv2.VideoWriter_fourcc('f', 'f', 'v', '1'), cv2.CAP_PROP_FPS, frame_queue[0].shape, True)
             fname = str(int(time.time()))
             print(dims)
-            print(type(frame))
-            v = cv2.VideoWriter(fname + '.avi', fourcc, 5, dims, True)
+            v = cv2.VideoWriter(fname + '.avi', fourcc, 15, dims, True)
             # Define the codec and create VideoWriter object
-            for i in range(len(frame_stack)):
-                v.write(frame_stack[i])
-            print("Wrote File: ", fname, ".avi with ", len(frame_stack), " frames.")
-            frame_stack = deque()
-            time.sleep(1/8)
+            print(frame.shape)
+            x = len(frame_queue)
+            for i in range(x):
+                f = frame_queue.popleft()
+                v.write(f)
+            print("Wrote File: ", fname, ".avi with ", x, " frames.")
+            frame_queue = deque()
+            #time.sleep(1/18)
 
         else:
-            time.sleep(1/5)
+            time.sleep(1/15)
 
 def cleanUp(video):
     video.release()

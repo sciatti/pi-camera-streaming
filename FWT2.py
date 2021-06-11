@@ -8,6 +8,8 @@ _, frame = video.read()
 dims = (frame.shape[1], frame.shape[0])
 time.sleep(0.2)
 v = cv2.VideoWriter('test.avi', fourcc, 5, dims, True)
+print(dims)
+print(frame.shape)
 for i in range(25):
     _, frame = video.read()
     v.write(frame)
