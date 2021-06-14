@@ -5,7 +5,7 @@ import sys
 import pickle
 import struct ### new code
 clientsocket=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-clientsocket.connect(('192.168.0.140',8089))
+clientsocket.connect(('192.168.1.123',8089))
 ### new
 data = bytes()
 payload_size = struct.calcsize("I") 
