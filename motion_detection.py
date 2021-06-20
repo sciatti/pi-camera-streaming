@@ -12,7 +12,9 @@ def motion_capture():
     frame_queue = deque()
     # Capturing video
     video = cv2.VideoCapture(0)
-
+    video.set(cv2.CAP_PROP_FPS, 30)
+    video.set(cv2.CAP_PROP_FRAME_WIDTH, 640.0)
+    video.set(cv2.CAP_PROP_FRAME_HEIGHT, 480.0)
     atexit.register(cleanUp, video)
 
     #create the background frame
@@ -27,7 +29,10 @@ def motion_capture():
     static_back = cv2.GaussianBlur(gray, (21, 21), 0)
     time.sleep(0.2)
     # Infinite while loop to treat stack of image as video
+    motion = False
+    st = time.time()
     while True:
+        before = motion
         motion = False
         # Reading frame(image) from video
         check, frame = video.read()
@@ -51,7 +56,6 @@ def motion_capture():
         # Finding contour of moving object
         cnts,_ = cv2.findContours(thresh_frame.copy(),
                         cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
         for contour in cnts:
             if cv2.contourArea(contour) < 10000:
                 continue
@@ -66,16 +70,18 @@ def motion_capture():
         # Appending current frame which has motion in it to the frame array
             frame_queue.append(frame)
             print("motion detected")
-            time.sleep(1/15)
+            if before == False:
+                st = time.time()
+            #time.sleep(1/15)
 
         # if we dont have something detected on screen
-        elif motion == False and len(frame_queue) > 0:
+        elif motion == False and time.time() - st > 1.5 and len(frame_queue) > 0:
             # motion has stopped, append this frame to the stack then write it out to disk and clear the stack
             frame_queue.append(frame)
             #v = cv2.VideoWriter(str(int(time.time())) + '.mp4', cv2.VideoWriter_fourcc('f', 'f', 'v', '1'), cv2.CAP_PROP_FPS, frame_queue[0].shape, True)
             fname = str(int(time.time()))
             print(dims)
-            v = cv2.VideoWriter(fname + '.avi', fourcc, 15, dims, True)
+            v = cv2.VideoWriter(fname + '.avi', fourcc, 30, dims, True)
             # Define the codec and create VideoWriter object
             print(frame.shape)
             x = len(frame_queue)
@@ -86,8 +92,9 @@ def motion_capture():
             frame_queue = deque()
             #time.sleep(1/18)
 
-        else:
-            time.sleep(1/15)
+        elif motion == False and time.time() - st < 1.5 and len(frame_queue) > 0:
+            frame_queue.append(frame)
+            #time.sleep(1/15)
 
 def cleanUp(video):
     video.release()
