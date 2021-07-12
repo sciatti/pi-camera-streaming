@@ -10,7 +10,7 @@ def dual_thread_fps_test(fps_target, wait):
     print("Dual Thread Performance Test")
     video = cv2.VideoCapture(0)
 
-    video.set(cv2.CAP_PROP_FPS, fps_target + 1)
+    video.set(cv2.CAP_PROP_FPS, fps_target)
     video.set(cv2.CAP_PROP_FRAME_WIDTH, 640.0)
     video.set(cv2.CAP_PROP_FRAME_HEIGHT, 480.0)
     print("Resolution: ", video.get(cv2.CAP_PROP_FRAME_WIDTH), video.get(cv2.CAP_PROP_FRAME_HEIGHT),
@@ -36,7 +36,7 @@ def single_thread_fps_test(fps_target, wait):
     frameQueue = deque()
     video = cv2.VideoCapture(0)
 
-    video.set(cv2.CAP_PROP_FPS, fps_target + 1)
+    video.set(cv2.CAP_PROP_FPS, fps_target)
     video.set(cv2.CAP_PROP_FRAME_WIDTH, 640.0)
     video.set(cv2.CAP_PROP_FRAME_HEIGHT, 480.0)
     print("Resolution: ", video.get(cv2.CAP_PROP_FRAME_WIDTH), video.get(cv2.CAP_PROP_FRAME_HEIGHT),
@@ -86,7 +86,7 @@ def no_set_fps_test(fps_target, wait):
         #print(cv2.compare(frameQueue[len(frameQueue) - 1], frame, cv2.CMP_EQ))
         if np.sum(cv2.compare(frameQueue[len(frameQueue) - 1], frame, cv2.CMP_EQ)) != 0:
             frameQueue.append(frame)
-    print("Frames Expected", wait * fps_target + 1, "Frames Gathered: ", len(frameQueue))    
+    print("Frames Expected", wait * fps_target, "Frames Gathered: ", len(frameQueue))    
 
 def readFrame1(video):
     global stopVal
@@ -140,7 +140,7 @@ f2 = None
 def fps_test_driver():
     test_val = 30
     global stopVal
-    wait = 15
+    wait = 5
     t1 = threading.Thread(target=single_thread_fps_test, args=[test_val, wait])
     t1.start()
     time.sleep(wait)

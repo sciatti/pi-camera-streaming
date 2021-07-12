@@ -11,6 +11,7 @@ void basic(videostream v)
 int main() {
     videostream vid(480.0, 640.0, 30.0, 0);
     std::thread cameraThread (basic, vid);
+    cameraThread.detach();
     std::this_thread::sleep_for(std::chrono::seconds(5));
     vid.stop();
     //cameraThread.join();

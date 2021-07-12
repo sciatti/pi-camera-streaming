@@ -1,6 +1,9 @@
-#include <opencv2/opencv.hpp>
+#include <opencv2/core.hpp>
+#include <opencv2/videoio.hpp>
+#include <opencv2/highgui.hpp>
 #include <iostream>
 #include <deque>
+#include <vector>
 
 // Videostreaming class that I will create using opencv
 
@@ -15,7 +18,9 @@ class videostream
         void stop(); //stop recording
         void printSummary(int sleepTime, int fpsTarget); // Print out the final stats
     private:
-        cv::VideoCapture cameraStream; // initialize a video capture object to stream the feed from
+        std::vector<float> dims;
+        //cv::VideoCapture cameraStream; // initialize a video capture object to stream the feed from
         std::deque<cv::Mat> streamQueue; // initialize a queue object to store the stream feed in sequential order
         bool stopValue; // stop value that determines when the stream ends
+        int captureIndex;
 };
