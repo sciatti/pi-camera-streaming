@@ -32,8 +32,11 @@ def dual_thread_fps_test(fps_target, wait):
 
 
 def single_thread_fps_test(fps_target, wait):
+    frameTimes = []
+    st = time.time()
     print("Single Thread Performance Test")
     frameQueue = deque()
+
     video = cv2.VideoCapture(0)
 
     video.set(cv2.CAP_PROP_FPS, fps_target)
@@ -44,10 +47,20 @@ def single_thread_fps_test(fps_target, wait):
     #fourcc = cv2.VideoWriter_fourcc(*"H264")
     #_, frame = video.read()
     #dims = (frame.shape[1], frame.shape[0])
+    frameTimes.append(time.time()-st)
 
     while stopVal != True:
+        st = time.time()
         _, frame = video.read()
+        frameTimes.append(time.time()-st)
         frameQueue.append(frame)
+
+    with open('frameTimes.txt', 'w') as f:
+        f.write("Video Capture Init Time: " + str(frameTimes[0]) + "\n")
+        f.write("Frame Read Times:\n")
+        for t in frameTimes[1:]:
+            f.write(str(t) + "\n")
+        f.close()
     print("Frames Expected", wait * fps_target, "Frames Gathered: ", len(frameQueue))
 
 def getFrame(fps_target, wait):
@@ -163,7 +176,7 @@ def fps_test_driver():
 def load_test():
     test_val = 30
     global stopVal
-    wait = 30
+    wait = 5
     t1 = threading.Thread(target=single_thread_fps_test, args=[test_val, wait])
     t1.start()
     time.sleep(wait)
