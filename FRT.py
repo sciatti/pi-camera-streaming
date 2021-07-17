@@ -160,7 +160,17 @@ def fps_test_driver():
     time.sleep(wait)
     stopVal = True
 
+def load_test():
+    test_val = 30
+    global stopVal
+    wait = 30
+    t1 = threading.Thread(target=single_thread_fps_test, args=[test_val, wait])
+    t1.start()
+    time.sleep(wait)
+    stopVal = True
+
 frame = None
 frameAvailable = None
 stopVal = False
-fps_test_driver()
+#fps_test_driver()
+load_test()

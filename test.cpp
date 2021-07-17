@@ -62,7 +62,7 @@ int main(int, char**)
     stop = false;
     std::thread cameraThread (runCam);
     cameraThread.detach();
-    std::this_thread::sleep_for(std::chrono::seconds(5));
+    std::this_thread::sleep_for(std::chrono::seconds(10));
     stop = true;
     std::this_thread::sleep_for(std::chrono::seconds(1));
     return 0;
