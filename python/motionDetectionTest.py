@@ -32,7 +32,7 @@ class stream:
         self.stop = True
     
     def empty(self):
-        return len(self.frame_queue) > 0
+        return len(self.frame_queue) == 0
 
     def pop(self):
         if len(self.frame_queue) > 0:
@@ -51,10 +51,10 @@ def cleanUp(video):
 
 def detect_motion(cameraStream, static_back):
     motion = False
+    #TODO: rewrite this as something intelligent, bozo
+    while cameraStream.empty():
+        time.sleep(1)
     frame = cameraStream.pop()
-
-    if frame == None:
-        return False, None
     # Converting color image to gray_scale image
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     # Converting gray scale image to GaussianBlur
@@ -112,8 +112,12 @@ def motion_capture():
     #create the background frame
     # Read the first frame from video
     #check, frame = video.read()
+    #TODO: rewrite this as something intelligent, bozo
     while cameraStream.empty():
         time.sleep(1)
+        print("empty")
+    print(len(cameraStream.frame_queue))
+    print(cameraStream.empty())
     frame = cameraStream.pop()
     #dims = (frame.shape[0], frame.shape[1])
     # Converting color image to gray_scale image
@@ -151,7 +155,7 @@ def motion_capture():
             else:
                 # We can stop collecting frames and write out to the file
                 if len(frame_queue) > 0:
-                    write_queue(frame_queue, video)
+                    write_queue(frame_queue, cameraStream)
                 # Eligible to change the BG photo after 10 seconds without motion
                 if time.time() - stop_motion_time > 10 and not swappedBG:
                     # Change the BG photo because we've went 10 seconds without new motion
