@@ -12,6 +12,7 @@ def capture(file, duration, framerate, height, width):
     video.set(cv2.CAP_PROP_FPS, framerate) # set the framerate to whatever FPS you want
     video.set(cv2.CAP_PROP_FRAME_WIDTH, width)
     video.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+    video.set(cv2.CAP_PROP_BUFFERSIZE, 3)
     bench.append(time.time()) # 1 - Video Capture init time
     _, frame = video.read() # read the first frame which takes a lot longer than the rest
     bench.append(time.time()) # 2 - First Frame Read Time

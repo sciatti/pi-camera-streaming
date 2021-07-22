@@ -17,6 +17,7 @@ class stream:
         self.video.set(cv2.CAP_PROP_FPS, fps)
         self.video.set(cv2.CAP_PROP_FRAME_WIDTH, width)
         self.video.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+        self.video.set(cv2.CAP_PROP_BUFFERSIZE, 1)
         self.stop = False
         self.frame_queue = deque()
 
@@ -24,9 +25,18 @@ class stream:
         print("Resolution: ", self.video.get(cv2.CAP_PROP_FRAME_WIDTH), self.video.get(cv2.CAP_PROP_FRAME_HEIGHT),
      " @ ", self.video.get(cv2.CAP_PROP_FPS), " FPS")
 
+        st = time.time()
+        z = 0
+        c = 0
         while self.stop != True:
+            if time.time() - st > 10:
+                print(c, "frames found in", time.time() - st, "seconds")
+                st = time.time()
+                c = 0
             _, frame = self.video.read()
-            self.frame_queue.append(frame)
+            self.frame_queue.appendleft((frame, z))
+            c+=1
+            z+=1
     
     def stop(self):
         self.stop = True
@@ -53,10 +63,10 @@ def detect_motion(cameraStream, static_back):
     motion = False
     #TODO: rewrite this as something intelligent, bozo
     while cameraStream.empty():
-        time.sleep(1)
+        time.sleep(0.01)
     frame = cameraStream.pop()
     # Converting color image to gray_scale image
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    gray = cv2.cvtColor(frame[0], cv2.COLOR_BGR2GRAY)
     # Converting gray scale image to GaussianBlur
     # so that change can be find easily
     gray = cv2.GaussianBlur(gray, (21, 21), 0)
@@ -80,26 +90,34 @@ def detect_motion(cameraStream, static_back):
 
         (x, y, w, h) = cv2.boundingRect(contour)
         # making green rectangle arround the moving object
-        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 3)
+        cv2.rectangle(frame[0], (x, y), (x + w, y + h), (0, 255, 0), 3)
     return motion, frame
 
-def write_queue(frame_queue, video):
+def write_queue(frame_queue):
     fourcc = cv2.VideoWriter_fourcc(*"H264")
     name = str(int(time.time()))
     #v = cv2.VideoWriter(name + '.avi', fourcc, video.get(cv2.CAP_PROP_FPS), (video.get(cv2.CAP_PROP_FRAME_WIDTH), video.get(cv2.CAP_PROP_FRAME_HEIGHT)))
-    v = cv2.VideoWriter(name + '.avi',fourcc, 30, (640, 480))
-    while len(frame_queue) > 0:
+    v = cv2.VideoWriter(name + '.avi', fourcc, 30, (640, 480))
+    c=0
+    f = open(name, 'w') 
+    while len(frame_queue) != 0:
         frame = frame_queue.pop()
-        v.write(frame)
-    print("wrote file: ", name + ".avi")
+        v.write(frame[0])
+        f.write(str(frame[1]) + "\n")
+        c+=1
+    print("wrote file: ", name + ".avi with", c, "frames")
     
 def simple(cameraStream):
 	cameraStream.run()
 
+def simple2(frame_queue):
+    write_queue(frame_queue)
+
 def motion_capture():
     cameraStream = stream(30, 480.0, 640.0)
-    t1 = threading.Thread(target=simple, args=[cameraStream])
-    t1.start() 
+    threads = []
+    threads.append(threading.Thread(target=simple, args=[cameraStream]))
+    threads[0].start()
 	# video = cv2.VideoCapture(0)
     # video.set(cv2.CAP_PROP_FPS, 30)
     # video.set(cv2.CAP_PROP_FRAME_WIDTH, 640.0)
@@ -114,14 +132,14 @@ def motion_capture():
     #check, frame = video.read()
     #TODO: rewrite this as something intelligent, bozo
     while cameraStream.empty():
-        time.sleep(1)
-        print("empty")
+        time.sleep(0.01)
+        #print("empty")
     print(len(cameraStream.frame_queue))
     print(cameraStream.empty())
     frame = cameraStream.pop()
     #dims = (frame.shape[0], frame.shape[1])
     # Converting color image to gray_scale image
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    gray = cv2.cvtColor(frame[0], cv2.COLOR_BGR2GRAY)
 
     # Converting gray scale image to GaussianBlur
     # so that change can be found easily
@@ -133,7 +151,14 @@ def motion_capture():
     motion_last_frame = False
     motion = False
     swappedBG = True
+    clear_threads = time.time()
     while True:
+        if time.time() - clear_threads > 30:
+            print("searching threads list for dead threads")
+            for i in range(len(threads)):
+                if not threads[i].is_alive():
+                    threads.pop(i)
+            clear_threads = time.time()
         motion, frame = detect_motion(cameraStream, static_back)
         if motion:
             swappedBG = False
@@ -142,24 +167,30 @@ def motion_capture():
                 start_motion_time = motion_time
             if motion_time - start_motion_time > 10:
                 # Change BG photo because there has been motion detected for a continuous 10 seconds
-                static_back = cv2.GaussianBlur(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), (21,21), 0)
-            frame_queue.append(frame)
+                static_back = cv2.GaussianBlur(cv2.cvtColor(frame[0], cv2.COLOR_BGR2GRAY), (21,21), 0)
+            frame_queue.appendleft(frame)
             print("appended frame from motion")
         else:
             if motion_last_frame:
                 print("found motion last frame", time.time())
                 stop_motion_time = time.time()
             elif (time.time() - stop_motion_time) < 2.0:
-                frame_queue.append(frame)
+                frame_queue.appendleft(frame)
                 print('appending frame from no motion', time.time(), stop_motion_time)
             else:
                 # We can stop collecting frames and write out to the file
                 if len(frame_queue) > 0:
-                    write_queue(frame_queue, cameraStream)
+                    if not threads[-1].is_alive():
+                        threads.pop(-1)
+                    print("spawning write out thread")
+                    shadow_queue = frame_queue
+                    frame_queue = deque()
+                    threads.append(threading.Thread(target=simple2, args=[shadow_queue]))
+                    threads[-1].start()
                 # Eligible to change the BG photo after 10 seconds without motion
                 if time.time() - stop_motion_time > 10 and not swappedBG:
                     # Change the BG photo because we've went 10 seconds without new motion
-                    static_back = cv2.GaussianBlur(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), (21,21), 0)
+                    static_back = cv2.GaussianBlur(cv2.cvtColor(frame[0], cv2.COLOR_BGR2GRAY), (21,21), 0)
                     swappedBG = True
 
         motion_last_frame = motion
