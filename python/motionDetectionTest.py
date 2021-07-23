@@ -53,8 +53,12 @@ class stream:
     def release(self):
         self.video.release()
 
-def cleanUp(video):
+def cleanUp(video, proc):
     video.release()
+    f = open('processing_times.txt', 'w')
+    for time in proc:
+        f.write(str(time) + "\n")
+    f.close()
 
     # Destroying all the windows
     cv2.destroyAllWindows()
@@ -122,8 +126,8 @@ def motion_capture():
     # video.set(cv2.CAP_PROP_FPS, 30)
     # video.set(cv2.CAP_PROP_FRAME_WIDTH, 640.0)
     # video.set(cv2.CAP_PROP_FRAME_HEIGHT, 480.0)
-
-    atexit.register(cleanUp, cameraStream)
+    proc = []
+    atexit.register(cleanUp, cameraStream, proc)
 
     frame_queue = deque()
 
@@ -152,6 +156,7 @@ def motion_capture():
     motion = False
     swappedBG = True
     clear_threads = time.time()
+    st = time.time()
     while True:
         if time.time() - clear_threads > 30:
             print("searching threads list for dead threads")
@@ -192,8 +197,10 @@ def motion_capture():
                     # Change the BG photo because we've went 10 seconds without new motion
                     static_back = cv2.GaussianBlur(cv2.cvtColor(frame[0], cv2.COLOR_BGR2GRAY), (21,21), 0)
                     swappedBG = True
-
+        proc.append(time.time() - st)
+        st = time.time()
         motion_last_frame = motion
+        
     
     # # Infinite while loop to treat stack of image as video
     # while True:
