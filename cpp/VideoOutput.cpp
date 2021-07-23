@@ -7,6 +7,8 @@
 #include <chrono>
 using namespace cv;
 
+// Sample Video Writing File
+
 void writeOut()
 {
     time_t timer;
