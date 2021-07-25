@@ -9,6 +9,8 @@
 #include <deque>
 #include <chrono>
 #include <vector>
+#include <thread>
+#include <string>
 
 void writeOut(std::deque<cv::Mat> &streamQueue)
 {
@@ -16,11 +18,12 @@ void writeOut(std::deque<cv::Mat> &streamQueue)
     streamQueue.clear();
 }
 
-bool motionDetection(std::deque<cv::Mat> &streamQueue, cv::Mat &frame, cv::Mat &background)
+//bool motionDetection(std::deque<cv::Mat> &streamQueue, cv::Mat &frame, cv::Mat &background)
+bool motionDetection(cv::Mat &frame, cv::Mat &background)
 {
     bool motion = false;
-    while ( streamQueue.empty() ) { /* Wait for a frame to enter the queue. */ }
-    frame = streamQueue.back();
+//    while ( streamQueue.empty() ) { /* Wait for a frame to enter the queue. */ }
+//    frame = streamQueue.back();
     
     cv::Mat gray;
     cv::cvtColor(frame, gray, cv::COLOR_BGR2GRAY);
@@ -57,9 +60,87 @@ bool motionDetection(std::deque<cv::Mat> &streamQueue, cv::Mat &frame, cv::Mat &
     return motion;
 }
 
+void driver()
+{
+    std::deque<cv::Mat> streamQueue;
+    cv::Mat frame;
+    cv::Mat backGround;
+    cv::VideoCapture cap;
+    // open the default camera using default API
+    int deviceID = 0;             // 0 = open default camera
+    int apiID = cv::CAP_ANY;      // 0 = autodetect default API
+    // open selected camera using selected API
+    cap.open(deviceID, apiID);
+    // check if we succeeded
+    if (!cap.isOpened()) 
+    {
+        std::cerr << "ERROR! Unable to open camera\n";
+        return;
+    }
+    cap.set(cv::CAP_PROP_FRAME_WIDTH, 640.0);
+    cap.set(cv::CAP_PROP_FRAME_HEIGHT, 480.0);
+    cap.set(cv::CAP_PROP_FPS, 30);
+
+    if ( !cap.read(backGround) ) 
+    {
+        std::cerr << "ERROR! Unable to read from camera\n";
+    }
+    cv::cvtColor(backGround, backGround, cv::COLOR_BGR2GRAY);
+    cv::GaussianBlur(backGround, backGround, cv::Size(21, 21), 0);
+
+    std::string input;
+    int duration = 3;
+    int count = 0;
+    std::cout << "Type 'quit' to quit, else type anything to record a frame:";
+    while ( std::cin >> input ) 
+    {
+        if ( input == "quit" ) break;
+        std::cout << "\n";
+        for (int i = 0; i < duration; ++i)
+        {
+            std::cout << "Reading a frame in " << duration - i << " seconds...\n";
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
+        std::cout << "Reading Frame Now...\n";
+        if ( cap.read(frame) ) 
+        {
+            streamQueue.push_back(frame);
+            count++;
+            //std::cerr << "ERROR! Unable to open camera\n";
+            //return;
+        }
+        else 
+        {
+            std::cout << "Error Reading Frame\n";
+        }
+        std::cout << "Type 'quit' to quit, else type anything to record a frame:";
+    }
+    std::cout << "There were " << count << " reads on the camera\n";
+
+    for (int i = 0; i < streamQueue.size(); i++) 
+    {
+        auto fr = streamQueue.front();
+        std::string fname = "static/static" + std::to_string(i) + ".png"; 
+        cv::imwrite(fname, fr);
+        streamQueue.pop_front();
+    }
+    /*for (int i = 0; i < streamQueue.size(); i++) 
+    {
+        auto fr = streamQueue.front();
+        auto start = std::chrono::steady_clock::now();
+        bool x = motionDetection(fr, backGround);
+        std::chrono::duration<double> diff = std::chrono::steady_clock::now() - start;
+        std::cout << "motionDetection() output: " << x << " duration: " << diff.count() << " seconds\n";
+        std::string fname = "static/static" + std::to_string(i) + ".png"; 
+        cv::imwrite(fname, fr);
+        streamQueue.pop_front();
+    }*/
+    cv::imwrite("static/bg.png", backGround);
+
+}
 
 int main() 
 {
-
+    driver();
     return 0;
 }

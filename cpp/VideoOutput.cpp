@@ -37,7 +37,7 @@ void writeOut()
      //wait until capture returns correctly
     }
 
-    int duration = 60;
+    int duration = 15;
     
     auto begin = std::chrono::steady_clock::now();
     auto start = std::chrono::steady_clock::now();
