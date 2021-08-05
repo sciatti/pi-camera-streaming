@@ -3,7 +3,8 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/core/types.hpp>
 #include <opencv2/imgproc.hpp>
-#include <opencv2/opencv.hpp>
+//#include <opencv2/opencv.hpp>
+
 //#include <raspicam/raspicam_cv.h>
 #include <iostream>
 #include <stdio.h>
@@ -56,9 +57,9 @@ bool motionDetection(cv::Mat &frame, cv::Mat &background)
         // making green rectangle arround the moving object
         cv::Point pt1 = cv::Point(bound.x, bound.y);
         cv::Point pt2 = cv::Point(bound.x + bound.width, bound.y + bound.height);
-        //cv::Scalar green = cv::Scalar(0, 255, 0);
-        cv::Scalar black = cv::Scalar(0, 0, 0);
-        cv::rectangle(frame, pt1, pt2, black, 3);
+        cv::Scalar green = cv::Scalar(0, 255, 0);
+        //cv::Scalar black = cv::Scalar(0, 0, 0);
+        cv::rectangle(frame, pt1, pt2, green, 3);
     }
 
     return motion;
@@ -67,17 +68,15 @@ bool motionDetection(cv::Mat &frame, cv::Mat &background)
 void driver()
 {
     std::deque<cv::Mat> streamQueue;
-    cv::Mat frame;
-    cv::Mat frame2;
     cv::Mat backGround;
-    cv::VideoCapture cap;
+    cv::VideoCapture cap(0);
     //raspicam::RaspiCam_Cv cap;
     // open the default camera using default API
-    int deviceID = 0;             // 0 = open default camera
-    int apiID = cv::CAP_ANY;      // 0 = autodetect default API
+    //int deviceID = 0;             // 0 = open default camera
+    //int apiID = cv::CAP_ANY;      // 0 = autodetect default API
     // open selected camera using selected API
     //cap.set( cv::CAP_PROP_FORMAT, CV_8UC1 );
-    cap.open(deviceID, apiID);
+    //cap.open(deviceID, apiID);
     // check if we succeeded
     if (!cap.isOpened())
     //if ( !cap.open() )
@@ -89,13 +88,14 @@ void driver()
     cap.set(cv::CAP_PROP_FRAME_HEIGHT, 480.0);
     cap.set(cv::CAP_PROP_FPS, 30);
 
-    if ( !cap.grab() ) 
+    cap >> backGround;
+    if ( backGround.empty() ) 
     {
-        std::cerr << "ERROR! Unable to read from camera\n";
+        std::cerr << "ERROR! Unable to read background from camera\n";
     }
-    cap.retrieve(backGround);
+    //cap.retrieve(backGround);
 
-    backGround = cv::imread("frames/bg.png");
+    //backGround = cv::imread("frames/bg.png");
     cv::cvtColor(backGround, backGround, cv::COLOR_BGR2GRAY);
     cv::GaussianBlur(backGround, backGround, cv::Size(21, 21), 0);
 
@@ -106,11 +106,20 @@ void driver()
     while ( std::cin >> input ) 
     {
         if ( input == "quit" ) break;
-        std::cout << "\n";
+        cv::Mat frame;
+	std::cout << "\n";
         for (int i = 0; i < duration; ++i)
         {
-            std::cout << "Reading a frame in " << duration - i << " seconds...\n";
-            std::this_thread::sleep_for(std::chrono::seconds(1));
+            auto start = std::chrono::steady_clock::now();
+	    std::chrono::duration<double> diff = std::chrono::steady_clock::now() - start;
+	    std::cout << "Reading a frame in " << duration - i << " seconds...\n";
+            do 
+	    { 
+		cap >> frame;
+	    	diff = std::chrono::steady_clock::now() - start;
+	    }
+	    while ( diff.count() < 1.00 );
+	    //std::this_thread::sleep_for(std::chrono::seconds(1));
         }
         if ( cap.grab() ) 
         {
@@ -121,8 +130,10 @@ void driver()
             }
             //std::string fname = "static" + std::to_string(count) + ".png";
             //cv::imwrite(fname, frame);
-            streamQueue.push_back(frame);
-            count++;
+	    cap >> frame;
+	    streamQueue.push_back(frame);
+            //frame.release();
+	    count++;
             //std::cerr << "ERROR! Unable to open camera\n";
             //return;
         }
@@ -140,17 +151,32 @@ void driver()
         streamQueue.push_back(cv::imread("frames/im" + std::to_string(i) + ".png"));
     }
     */
+    cv::Mat diff;
+    cv::compare(streamQueue.front(), streamQueue.back(), diff, cv::CMP_EQ);
+    /*bool notEQ = false;
+    for (int i = 0; i < diff.cols; i++){
+    	for (int j = 0; j < diff.rows; j++){
+	    if ( diff[j][i] != 255 ) {
+	        std::cout << "Matrices Are Not Equal\n";
+		notEQ = true;
+		break;
+	    }
+	}
+	if ( notEQ ) break;
+    }
+    if ( !notEQ ) std::cout << "Matrices Are Equal\n";*/
+    cv::imwrite("staticDiff.png", diff);
     int i = 0;
     while ( !streamQueue.empty() ) 
     {
-        auto fr = streamQueue.front();
+	cv::Mat fr = streamQueue.front();
         auto start = std::chrono::steady_clock::now();
         bool x = motionDetection(fr, backGround);
         //bool x = true;
         std::chrono::duration<double> diff = std::chrono::steady_clock::now() - start;
         std::cout << "motionDetection() output: " << x << " duration: " << diff.count() << " seconds\n";
-        std::string fname = "static/static" + std::to_string(i) + ".png"; 
-        //cv::imwrite(fname, fr);
+        std::string fname = "static" + std::to_string(i) + ".png"; 
+        cv::imwrite(fname, fr);
         streamQueue.pop_front();
         ++i;
     }

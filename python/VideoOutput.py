@@ -7,7 +7,7 @@ from collections import deque
 def capture(file, duration, framerate, height, width):
     bench = []
     bench.append(time.time()) # 0 - Capture() start time
-    video = cv2.VideoCapture(0) # init the video capture module
+    video = cv2.VideoCapture(-1) # init the video capture module
     fourcc = cv2.VideoWriter_fourcc(*"H264") # use the h264 video encoder
     video.set(cv2.CAP_PROP_FPS, framerate) # set the framerate to whatever FPS you want
     video.set(cv2.CAP_PROP_FRAME_WIDTH, width)
