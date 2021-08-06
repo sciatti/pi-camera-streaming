@@ -52,7 +52,7 @@ bool motionDetection(cv::Mat &frame, cv::Mat &background)
     {
         if ( cv::contourArea(contours[i]) < 10000 ) continue;
         motion = true;
-        return true;
+        //return true;
         cv::Rect bound = cv::boundingRect(contours[i]);
         // making green rectangle arround the moving object
         cv::Point pt1 = cv::Point(bound.x, bound.y);
