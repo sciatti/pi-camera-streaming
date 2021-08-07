@@ -4,9 +4,10 @@
 #include <opencv2/core/types.hpp>
 #include <opencv2/imgproc.hpp>
 #include <iostream>
-#include <deque>
 #include <vector>
 #include <string>
+#include "tsqueue.h"
+#include <deque>
 
 // Videostreaming class that I will create using opencv
 
@@ -21,14 +22,17 @@ class videostream
         bool available(); // Return true if queue is not empty
         cv::Mat popImage(); // Return last element in the queue
         void writeVideo(std::deque<cv::Mat> &frameQueue); // Write out the data
+        //void writeVideo(Tsqueue<cv::Mat> &frameQueue); // Write out the data
         void stop(); //stop recording
         void printSummary(int sleepTime, int fpsTarget); // Print out the final stats
     private:
         std::vector<float> dims;
         std::vector<std::deque<cv::Mat>> writeVec; // vector of deques of mats that hold all the data we're gonna write out
+        //std::vector<Tsqueue<cv::Mat>> writeVec; // vector of deques of mats that hold all the data we're gonna write out
         std::vector<std::string> writeNames; // vector of strings that store the write out file name
         //cv::VideoCapture cameraStream; // initialize a video capture object to stream the feed from
-        std::deque<cv::Mat> streamQueue; // initialize a queue object to store the stream feed in sequential order
+        //std::deque<cv::Mat> streamQueue; // initialize a queue object to store the stream feed in sequential order
+        Tsqueue<cv::Mat> streamQueue; // initialize a queue object to store the stream feed in sequential order
         bool stopValue; // stop value that determines when the stream ends
         int captureIndex;
 };

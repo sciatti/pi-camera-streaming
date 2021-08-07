@@ -8,7 +8,7 @@
 #include <opencv2/imgproc.hpp>
 */
 
-//g++ testMotDet.cpp videostream.cpp videostream.h -o testMotDet.exe -lpthread `pkg-config --cflags --libs opencv`
+//g++ -std=c++17 testMotDet.cpp videostream.cpp videostream.h tsqueue.h -o testMotDet.exe -lpthread `pkg-config --cflags --libs opencv`
 
 void runCam(videostream &stream) 
 {
@@ -32,6 +32,7 @@ int main(int, char**)
     std::thread motionThread (runDetect, std::ref(stream));
     motionThread.detach();
 
+    //std::this_thread::sleep_for(std::chrono::seconds(2));
     std::cout << "Enter Anything To Stop Detection: ";
     std::string input;
     std::cin >> input;

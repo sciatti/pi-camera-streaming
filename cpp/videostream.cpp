@@ -22,7 +22,11 @@ void videostream::run()
     stopValue = true; //just make sure this is right when starting... probably remove later
     cameraStream.open(0, captureIndex);
     if ( cameraStream.isOpened() ) std::cout << "Camera Successfully Initialized\n";
-    else std::cout << "Failed To Initialize Camera, Exiting...\n"; return;
+    else 
+    {
+        std::cout << "Failed To Initialize Camera, Exiting...\n"; 
+        return;
+    }
     
     if ( dims.size() > 0 ) 
     {
@@ -30,17 +34,23 @@ void videostream::run()
         cameraStream.set(cv::CAP_PROP_FRAME_HEIGHT, dims[1]);
         cameraStream.set(cv::CAP_PROP_FPS, dims[2]);
     }
-
-    std::cout << "Resolution: " << cameraStream.get(cv::CAP_PROP_FRAME_WIDTH) << cameraStream.get(cv::CAP_PROP_FRAME_HEIGHT) <<
-     " @ " << cameraStream.get(cv::CAP_PROP_FPS) << " FPS\n";
+    std::cout << "Resolution: " << cameraStream.get(cv::CAP_PROP_FRAME_WIDTH) << "x" << cameraStream.get(cv::CAP_PROP_FRAME_HEIGHT) <<
+    " @ " << cameraStream.get(cv::CAP_PROP_FPS) << " FPS\n";
+    auto st = std::chrono::system_clock::now();
     while ( stopValue ) {
+        std::chrono::duration<double> diff = std::chrono::system_clock::now() - st;
+        if ( diff.count() > 10.0 ) 
+        {
+            std::cout << "10 Seconds Have Passed. Frame Queue Size: " << streamQueue.size() << "\n";
+            st = std::chrono::system_clock::now();
+        }
         cv::Mat img;
         bool ret = cameraStream.read(img);
         //std::cout << "return value: " << ret << "\n";
-        if ( !img.empty() ) streamQueue.push_back(img);
+        if ( !img.empty() ) streamQueue.push(img);//streamQueue.push_back(img);
     }
     cameraStream.release();
-    cv::destroyAllWindows();
+    //cv::destroyAllWindows();
 }
 
 bool videostream::available()
@@ -50,9 +60,10 @@ bool videostream::available()
 
 cv::Mat videostream::popImage()
 {
-    cv::Mat ret = streamQueue.back();
-    streamQueue.pop_back();
-    return ret;
+    //cv::Mat ret = streamQueue.front();
+    //streamQueue.pop_front();
+    //return ret;
+    return streamQueue.pop();
 }
 
 void videostream::printSummary(int sleepTime, int fpsTarget)
@@ -128,7 +139,8 @@ void videostream::motionDetection()
         // wait until the queue becomes populated
         while ( !available() ) {}
         frame = popImage();
-        if ( motion )
+        motion = videostream::motion(frame, static_back);
+	if ( motion )
         {
             swappedBG = false;
             motion_time = std::chrono::system_clock::now();
