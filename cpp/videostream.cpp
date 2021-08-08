@@ -119,8 +119,8 @@ bool videostream::motion(cv::Mat &frame, cv::Mat &background)
 void videostream::motionDetection()
 {
     cv::Mat static_back;
-    while ( !available() ) {}
-        static_back = popImage();
+    while ( !available() ) { std::this_thread::sleep_for(std::chrono::seconds(0.01)); }
+    static_back = popImage();
     cv::cvtColor(static_back, static_back, cv::COLOR_BGR2GRAY);
     cv::GaussianBlur(static_back, static_back, cv::Size(21, 21), 0);
 
@@ -137,7 +137,7 @@ void videostream::motionDetection()
     while ( stopValue )
     {
         // wait until the queue becomes populated
-        while ( !available() ) {}
+        while ( !available() ) { std::this_thread::sleep_for(std::chrono::seconds(0.01)); }
         frame = popImage();
         motion = videostream::motion(frame, static_back);
 	if ( motion )
@@ -156,7 +156,7 @@ void videostream::motionDetection()
         }
         else
         {
-            std::chrono::duration<double> diff = std::chrono::system_clock::now() - start_motion_time;
+            std::chrono::duration<double> diff = std::chrono::system_clock::now() - stop_motion_time;
             if ( motion_last_frame ) 
             {
                 stop_motion_time = std::chrono::system_clock::now();
