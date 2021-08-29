@@ -8,6 +8,9 @@
 #include <string>
 #include "tsqueue.h"
 #include <deque>
+#include <sys/socket.h>
+#include <thread>
+#include <arpa/inet.h>	//inet_addr
 
 // Videostreaming class that I will create using opencv
 
@@ -15,13 +18,14 @@ class videostream
 {
     public:
         videostream(); // Default Constructor
-        videostream(float height, float width, float fps, int index); // Initialize with fps and resolution arguments
+        videostream(float height, float width, float fps, int index, struct sockaddr_in server); // Initialize with fps and resolution arguments
         void run(); // Function To Begin Streaming From The Camera
         bool motion(cv::Mat &frame, cv::Mat &background); // Function To Detect Motion From The Camera Stream
         void motionDetection(); // Main Motion Detection Function
         bool available(); // Return true if queue is not empty
         cv::Mat popImage(); // Return last element in the queue
         void writeVideo(std::deque<cv::Mat> &frameQueue); // Write out the data
+        void sendVideo(std::deque<cv::Mat> &frameQueue); // Send the data
         //void writeVideo(Tsqueue<cv::Mat> &frameQueue); // Write out the data
         void stop(); //stop recording
         void printSummary(int sleepTime, int fpsTarget); // Print out the final stats
@@ -35,4 +39,5 @@ class videostream
         Tsqueue<cv::Mat> streamQueue; // initialize a queue object to store the stream feed in sequential order
         bool stopValue; // stop value that determines when the stream ends
         int captureIndex;
+        struct sockaddr_in server_data;
 };
