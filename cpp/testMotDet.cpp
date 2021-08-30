@@ -1,5 +1,4 @@
 #include "videostream.h"
-#include <thread>
 /*
 #include <opencv2/core.hpp>
 #include <opencv2/videoio.hpp>

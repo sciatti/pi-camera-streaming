@@ -4,6 +4,7 @@
 videostream::videostream()
 {
     stopValue = true;
+    blurSize = cv::Size(9, 9);
 }
 
 videostream::videostream(float height, float width, float fps, int index=0)
@@ -14,6 +15,7 @@ videostream::videostream(float height, float width, float fps, int index=0)
     dims.push_back(width);
     dims.push_back(height);
     dims.push_back(fps);
+    blurSize = cv::Size(9, 9);
 }
 
 void videostream::run()
@@ -30,12 +32,12 @@ void videostream::run()
     
     if ( dims.size() > 0 ) 
     {
-        cameraStream.set(cv::CAP_PROP_FRAME_WIDTH, dims[0]);
-        cameraStream.set(cv::CAP_PROP_FRAME_HEIGHT, dims[1]);
+        cameraStream.set(cv::CAP_PROP_FRAME_WIDTH, dims[1]);
+        cameraStream.set(cv::CAP_PROP_FRAME_HEIGHT, dims[0]);
         cameraStream.set(cv::CAP_PROP_FPS, dims[2]);
     }
     std::cout << "Resolution: " << cameraStream.get(cv::CAP_PROP_FRAME_WIDTH) << "x" << cameraStream.get(cv::CAP_PROP_FRAME_HEIGHT) <<
-    " @ " << cameraStream.get(cv::CAP_PROP_FPS) << " FPS\n";
+    " @ " << cameraStream.get(cv::CAP_PROP_FPS) << " FPS" << " Format: " << cameraStream.get(cv::CAP_PROP_FORMAT) << "\n";
     auto st = std::chrono::system_clock::now();
     while ( stopValue ) {
         std::chrono::duration<double> diff = std::chrono::system_clock::now() - st;
@@ -49,6 +51,7 @@ void videostream::run()
         //std::cout << "return value: " << ret << "\n";
         if ( !img.empty() ) streamQueue.push(img);//streamQueue.push_back(img);
     }
+    std::cout << "Releasing Camera Stream\n";
     cameraStream.release();
     //cv::destroyAllWindows();
 }
@@ -85,7 +88,7 @@ bool videostream::motion(cv::Mat &frame, cv::Mat &background)
     cv::Mat dilateOut;
 
     cv::cvtColor(frame, gray, cv::COLOR_BGR2GRAY);
-    cv::GaussianBlur(gray, gray, cv::Size(21, 21), 0);
+    cv::GaussianBlur(gray, gray, blurSize, 0);
     
     // Difference between static background
     cv::absdiff(background, gray, Diff);
@@ -119,10 +122,10 @@ bool videostream::motion(cv::Mat &frame, cv::Mat &background)
 void videostream::motionDetection()
 {
     cv::Mat static_back;
-    while ( !available() ) { std::this_thread::sleep_for(std::chrono::seconds(0.01)); }
+    while ( !available() ) { }//std::this_thread::sleep_for(std::chrono::seconds(0.01)); }
     static_back = popImage();
     cv::cvtColor(static_back, static_back, cv::COLOR_BGR2GRAY);
-    cv::GaussianBlur(static_back, static_back, cv::Size(21, 21), 0);
+    cv::GaussianBlur(static_back, static_back, blurSize, 0);
 
     // Assign the timing values and booleans
     auto stop_motion_time = std::chrono::system_clock::from_time_t(0.0);
@@ -137,7 +140,7 @@ void videostream::motionDetection()
     while ( stopValue )
     {
         // wait until the queue becomes populated
-        while ( !available() ) { std::this_thread::sleep_for(std::chrono::seconds(0.01)); }
+        while ( !available() ) { }//std::this_thread::sleep_for(std::chrono::seconds(0.01)); }
         frame = popImage();
         motion = videostream::motion(frame, static_back);
 	if ( motion )
@@ -146,10 +149,10 @@ void videostream::motionDetection()
             motion_time = std::chrono::system_clock::now();
             if ( !motion_last_frame ) start_motion_time = motion_time;
             std::chrono::duration<double> diff = motion_time - start_motion_time;
-            if ( diff.count() > 10.0 ) 
+            if ( diff.count() > 5.0 ) 
             {
                 cv::cvtColor(frame, static_back, cv::COLOR_BGR2GRAY);
-                cv::GaussianBlur(static_back, static_back, cv::Size(21, 21), 0);
+                cv::GaussianBlur(static_back, static_back, blurSize, 0);
             }
             writeData.push_back(frame);
             std::cout << "appended frame from motion\n";
@@ -163,7 +166,7 @@ void videostream::motionDetection()
                 std::cout << "found motion last frame\n";
                 writeData.push_back(frame);
             }
-            else if ( diff.count() < 2.0 )
+            else if ( diff.count() < 0.5 )
             {
                 std::cout << "appending frame from no motion\n";
                 writeData.push_back(frame);
@@ -176,21 +179,26 @@ void videostream::motionDetection()
                     writeVec.push_back(writeData);
                     writeNames.push_back(std::to_string(videoName));
                     writeData.clear();
+                    videoName++;
                 }
             }
         }
         motion_last_frame = motion;
     }
+    std::cout << "Ending Motion Detection\n";
 }
 
 void videostream::writeVideo(std::deque<cv::Mat> &frameQueue)
 {
+    std::cout << "Writing Gathered Videos\n";
     for (size_t i = 0; i < writeVec.size(); ++i)
     {
-        cv::VideoWriter v = cv::VideoWriter(writeNames[i] + ".avi", cv::VideoWriter::fourcc('H', '2', '6', '4'), dims[2], cv::Size(dims[0], dims[1]));
+        std::cout << "Writing video " << std::to_string(i) << ".avi...\n";
+        cv::VideoWriter v = cv::VideoWriter(writeNames[i] + ".avi", cv::VideoWriter::fourcc('H', '2', '6', '4'), dims[2], cv::Size(dims[1], dims[0]));
         while ( !writeVec[i].empty() ) {
             v.write(writeVec[i].front());
             writeVec[i].pop_front();
         }
+        std::cout << "Completed writing " << std::to_string(i) << ".avi\n";
     }
 }

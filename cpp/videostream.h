@@ -8,6 +8,7 @@
 #include <string>
 #include "tsqueue.h"
 #include <deque>
+#include <thread>
 
 // Videostreaming class that I will create using opencv
 
@@ -26,6 +27,7 @@ class videostream
         void stop(); //stop recording
         void printSummary(int sleepTime, int fpsTarget); // Print out the final stats
     private:
+        cv::Size blurSize;
         std::vector<float> dims;
         std::vector<std::deque<cv::Mat>> writeVec; // vector of deques of mats that hold all the data we're gonna write out
         //std::vector<Tsqueue<cv::Mat>> writeVec; // vector of deques of mats that hold all the data we're gonna write out
