@@ -1,13 +1,15 @@
 #include "videostream.h"
 // Implementation for the videostream class that I will develop using opencv
 
+// https://stackoverflow.com/questions/20314524/c-opencv-image-sending-through-socket
+
 videostream::videostream()
 {
     stopValue = true;
     blurSize = cv::Size(9, 9);
 }
 
-videostream::videostream(float height, float width, float fps, int index=0)
+videostream::videostream(float height, float width, float fps, int index=0, struct sockaddr_in server)
 {
     stopValue = true;
     //cameraStream = cv::VideoCapture();
@@ -16,6 +18,7 @@ videostream::videostream(float height, float width, float fps, int index=0)
     dims.push_back(height);
     dims.push_back(fps);
     blurSize = cv::Size(9, 9);
+    server_data = server;
 }
 
 void videostream::run()
@@ -175,11 +178,17 @@ void videostream::motionDetection()
             {
                 if ( writeData.size() > 0 )
                 {
-                    // We need to write the gathered data out now...
-                    writeVec.push_back(writeData);
-                    writeNames.push_back(std::to_string(videoName));
+                    // Send the data to the server...
+                    // Eventually we probably want to run this in a detached thread but
+                    // for now it is fine to be on the same thread
+                    sendVideo(writeData);
                     writeData.clear();
-                    videoName++;
+                    
+                    // We need to write the gathered data out now...
+                    //writeVec.push_back(writeData);
+                    //writeNames.push_back(std::to_string(videoName));
+                    //writeData.clear();
+                    //videoName++;
                 }
             }
         }
@@ -201,4 +210,29 @@ void videostream::writeVideo(std::deque<cv::Mat> &frameQueue)
         }
         std::cout << "Completed writing " << std::to_string(i) << ".avi\n";
     }
+}
+
+void sendVideo(std::deque<cv::Mat> &frameQueue)
+{
+    // Call this on another detached thread since it will either quit immediately after failing a connection or 
+    // Run through its frames in its queue (not that many like 200 max) and quickly send them over to the server
+
+	// Attempt to create the socket
+	int socket_desc = socket(AF_INET , SOCK_STREAM , 0);
+	if ( socket_desc == -1 )
+	{
+		std::cout << "Error: Could not create socket.\n";
+        return
+	}
+
+    // Attempt a connection to a local server
+	if ( connect(socket_desc , (struct sockaddr *)&server_data , sizeof(server_data)) < 0 )
+	{
+		std::cout << "Error: Could not connect with server\n";
+		return;
+	}
+
+    // For now exit and don't send anything, later will work towards sending a mat and then multiple in sequence.
+    close(socket_desc);
+
 }
