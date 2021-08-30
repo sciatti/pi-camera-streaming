@@ -10,7 +10,8 @@
 #include <deque>
 #include <sys/socket.h>
 #include <thread>
-#include <arpa/inet.h>	//inet_addr
+#include <arpa/inet.h>	//inet_addr()
+#include <unistd.h>  //close()
 
 // Videostreaming class that I will create using opencv
 

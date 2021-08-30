@@ -9,7 +9,7 @@ videostream::videostream()
     blurSize = cv::Size(9, 9);
 }
 
-videostream::videostream(float height, float width, float fps, int index=0, struct sockaddr_in server)
+videostream::videostream(float height, float width, float fps, int index, struct sockaddr_in server)
 {
     stopValue = true;
     //cameraStream = cv::VideoCapture();
@@ -212,7 +212,7 @@ void videostream::writeVideo(std::deque<cv::Mat> &frameQueue)
     }
 }
 
-void sendVideo(std::deque<cv::Mat> &frameQueue)
+void videostream::sendVideo(std::deque<cv::Mat> &frameQueue)
 {
     // Call this on another detached thread since it will either quit immediately after failing a connection or 
     // Run through its frames in its queue (not that many like 200 max) and quickly send them over to the server
@@ -222,7 +222,7 @@ void sendVideo(std::deque<cv::Mat> &frameQueue)
 	if ( socket_desc == -1 )
 	{
 		std::cout << "Error: Could not create socket.\n";
-        return
+        return;
 	}
 
     // Attempt a connection to a local server
@@ -231,8 +231,8 @@ void sendVideo(std::deque<cv::Mat> &frameQueue)
 		std::cout << "Error: Could not connect with server\n";
 		return;
 	}
-
+    size_t len = frameQueue.size();
+    send(socket_desc, &len, sizeof(frameQueue.size()), 0);
     // For now exit and don't send anything, later will work towards sending a mat and then multiple in sequence.
     close(socket_desc);
-
 }

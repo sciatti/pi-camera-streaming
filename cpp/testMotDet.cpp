@@ -25,12 +25,12 @@ int main(int argc, char** argv)
     struct sockaddr_in server;
     server.sin_addr.s_addr = inet_addr(argv[1]);
 	server.sin_family = AF_INET;
-	server.sin_port = htons( 80 );
+	server.sin_port = htons( 12345 );
 
 //  -------------------------------------------------------------
 
     // Initialize The Stream Object
-    videostream stream(640.0, 480.0, 20.0, 0, ip);
+    videostream stream(640.0, 480.0, 20.0, 0, server);
     // Give the stream a separate thread of execution and set it to run
     std::thread cameraThread (runCam, std::ref(stream));
     cameraThread.detach();
