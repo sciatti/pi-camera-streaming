@@ -17,6 +17,7 @@ def initCam():
     cap.set(cv2.CAP_PROP_FPS, 20)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640.0)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480.0)
+    cap.set(cv2.CAP_PROP_FORMAT, cv2.CV_8UC1)
     return cap
 
 def getBG(cap):
@@ -30,7 +31,8 @@ def subtractMethod(stream, background, dir):
     fourcc = cv2.VideoWriter_fourcc(*"H264")
     v = cv2.VideoWriter(os.path.join(dir, 'example.avi'), fourcc, 20, (640,480), True)
     for image in stream:
-        diff = background - image
+        #diff = background - image
+        diff = image
         cv2.imwrite(os.path.join(dir, str(c) + ".png"), diff)
         v.write(diff)
         c+=1
