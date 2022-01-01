@@ -30,7 +30,7 @@ int main(int argc, char** argv)
 //  -------------------------------------------------------------
 
     // Initialize The Stream Object
-    videostream stream(640.0, 480.0, 20.0, 0, server);
+    videostream stream(640.0, 480.0, 12.0, 0, server);
     // Give the stream a separate thread of execution and set it to run
     std::thread cameraThread (runCam, std::ref(stream));
     cameraThread.detach();

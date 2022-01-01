@@ -212,6 +212,41 @@ void videostream::writeVideo(std::deque<cv::Mat> &frameQueue)
     }
 }
 
+void videostream::getBuffer(cv::Mat &img, std::vector<uchar> &buffer)
+{
+    if ( !cv::imencode("*.png", img, buffer) ) {
+        std::cout << "Error encoding image to buffer.\n";
+        exit(1);
+    }
+}
+
+void videostream::sendBuffer(int socket_desc, std::vector<uchar> &buffer)
+{
+    int bytes = send(socket_desc, buffer.data(), sizeof(uchar)*buffer.size(), 0);
+    if ( bytes >= 0 )
+    {
+        std::cout << bytes << " message sent.\n";
+    }
+    else {
+        std::cout << "errorno: " << bytes << "\n";
+    }
+}
+
+void videostream::sendFrames(std::deque<cv::Mat> &frameQueue, int socket_desc)
+{
+    cv::Mat img;
+    std::vector<uchar> temp_buffer;
+    while ( !frameQueue.empty() )
+    {
+        img = frameQueue.front();
+        frameQueue.pop_front();
+        getBuffer(img, temp_buffer);
+        std::string msg_size = std::to_string(temp_buffer.size());
+        send(socket_desc, msg_size.data(), msg_size.size(), 0);
+        sendBuffer(socket_desc, temp_buffer);
+    }
+}
+
 void videostream::sendVideo(std::deque<cv::Mat> &frameQueue)
 {
     // Call this on another detached thread since it will either quit immediately after failing a connection or 
@@ -231,8 +266,9 @@ void videostream::sendVideo(std::deque<cv::Mat> &frameQueue)
 		std::cout << "Error: Could not connect with server\n";
 		return;
 	}
-    size_t len = frameQueue.size();
-    send(socket_desc, &len, sizeof(frameQueue.size()), 0);
+
+    sendFrames(frameQueue, socket_desc);
+
     // For now exit and don't send anything, later will work towards sending a mat and then multiple in sequence.
     close(socket_desc);
 }

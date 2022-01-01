@@ -3,6 +3,7 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/core/types.hpp>
 #include <opencv2/imgproc.hpp>
+#include <opencv2/core/hal/interface.h>
 #include <iostream>
 #include <vector>
 #include <string>
@@ -12,6 +13,7 @@
 #include <thread>
 #include <arpa/inet.h>	//inet_addr()
 #include <unistd.h>  //close()
+#include <netinet/in.h>
 
 // Videostreaming class that I will create using opencv
 
@@ -30,6 +32,9 @@ class videostream
         //void writeVideo(Tsqueue<cv::Mat> &frameQueue); // Write out the data
         void stop(); //stop recording
         void printSummary(int sleepTime, int fpsTarget); // Print out the final stats
+        void sendFrames(std::deque<cv::Mat> &frameQueue, int socket_desc);
+        void getBuffer(cv::Mat &img, std::vector<uchar> &buffer);
+        void sendBuffer(int socket_desc, std::vector<uchar> &buffer);
     private:
         cv::Size blurSize;
         std::vector<float> dims;
