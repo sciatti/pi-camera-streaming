@@ -107,16 +107,19 @@ bool videostream::motion(cv::Mat &frame, cv::Mat &background)
 
     for (size_t i = 0; i < contours.size(); ++i)
     {
-        if ( cv::contourArea(contours[i]) < 10000 ) continue;
-        motion = true;
+        if ( cv::contourArea(contours[i]) > 10000 )
+        {
+            motion = true;
+            break;
+        }
 
-        cv::Rect bound = cv::boundingRect(contours[i]);
-        // making green rectangle arround the moving object
-        cv::Point pt1 = cv::Point(bound.x, bound.y);
-        cv::Point pt2 = cv::Point(bound.x + bound.width, bound.y + bound.height);
-        cv::Scalar green = cv::Scalar(0, 255, 0);
-        //cv::Scalar black = cv::Scalar(0, 0, 0);
-        cv::rectangle(frame, pt1, pt2, green, 3);
+        // cv::Rect bound = cv::boundingRect(contours[i]);
+        // // making green rectangle arround the moving object
+        // cv::Point pt1 = cv::Point(bound.x, bound.y);
+        // cv::Point pt2 = cv::Point(bound.x + bound.width, bound.y + bound.height);
+        // cv::Scalar green = cv::Scalar(0, 255, 0);
+        // //cv::Scalar black = cv::Scalar(0, 0, 0);
+        // cv::rectangle(frame, pt1, pt2, green, 3);
     }
 
     return motion;

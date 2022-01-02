@@ -6,6 +6,7 @@ import numpy as np
 parser = argparse.ArgumentParser(description='Receive a connection')
 parser.add_argument('ip', type=str, help='ip address to set up on')
 parser.add_argument('port', type=int, help='port number')
+parser.add_argument('-w', action='count', default=0, help='flag to tell the server to write its images out')
 
 args = parser.parse_args()
 
@@ -17,27 +18,22 @@ def receive(conn, addr, names):
         if not data:
             break
         msg += data
-    #with open('out.txt', 'w') as w:
-    #    w.write(str(msg))
     return parse(msg, names)
 
 def parse(msg, names):
-    #print(msg)
-    #size, data = msg.split(b'x89PNG')
     start = 0
     c = 0
     images = []
     while start < len(msg):
         substr_idx = msg.find(b'\x89PNG\r\n', start, start+50)
-        print("substring_index:", substr_idx)
         image_size = int(msg[start:substr_idx].decode())
         image_size_len = len(msg[start:substr_idx].decode())
-        print("image_size:", image_size)
-        print("msg_len:", len(msg))
 
         x = np.frombuffer(msg[substr_idx:substr_idx+image_size], dtype=np.uint8)
         img = cv2.imdecode(x, cv2.IMREAD_UNCHANGED)
-        cv2.imwrite(str(c) + ".png", img)
+
+        if args.w > 0:
+            cv2.imwrite(str(c) + ".png", img)
         c += 1
         start = start+image_size+image_size_len
         images.append(img)
