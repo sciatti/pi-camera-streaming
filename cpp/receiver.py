@@ -37,6 +37,15 @@ def parse(msg, names):
         c += 1
         start = start+image_size+image_size_len
         images.append(img)
+    return images
+
+def detectMotion(image_list):
+    """Function that detects motion with a fine algorithm and then draws contour lines over it"""
+    pass
+
+def sendToServer(image_list):
+    """Function to send to the cloud or server which stores the file"""
+    pass
 
 def main():
     """Driver for the receiver program."""
@@ -55,7 +64,9 @@ def main():
                     print("closed:", c)
                     break
                 try:
-                    receive(conn, addr, names)
+                    data = receive(conn, addr, names)
+                    if detectMotion(data):
+                        sendToServer(data)
                 except Exception as e:
                     print("exception:", e)
                     print("exiting")
