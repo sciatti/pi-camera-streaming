@@ -1,0 +1,21 @@
+Period Value: 1
+average frame processing time: 0.041419457056663306 average FPS: 24.14324259808534
+average frame downsizing time:  0.003841826206664033
+Period Value: 2
+average frame processing time: 0.021957392793347026 average FPS: 45.54274769375145
+average frame downsizing time:  0.003204601371660374
+Period Value: 4
+average frame processing time: 0.02221175856667287 average FPS: 45.02119888428948
+average frame downsizing time:  0.0031605880599959667
+Period Value: 8
+average frame processing time: 0.024551241283338642 average FPS: 40.73113813103357
+average frame downsizing time:  0.0032917816225013514
+Period Value: 16
+average frame processing time: 0.02457504220000525 average FPS: 40.69169004315225
+average frame downsizing time:  0.0034264907533370207
+Period Value: 32
+average frame processing time: 0.021441769180008428 average FPS: 46.63794258788896
+average frame downsizing time:  0.003452752388337659
+Period Value: 64
+average frame processing time: 0.021658871689993853 average FPS: 46.170456813869414
+average frame downsizing time:  0.0034862455614297905

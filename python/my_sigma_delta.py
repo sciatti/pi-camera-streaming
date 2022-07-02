@@ -1,20 +1,24 @@
-import cv2
-from numba.np.ufunc.decorators import vectorize
 import numpy as np
 from collections import deque
-from numpy.core.fromnumeric import shape
 from scipy.ndimage import gaussian_filter
 import time
-import timeit
+#from PIL import Image
+import cv2
+#numpy.array(Image.fromarray(arr).resize())
+
+arrType = np.float32
 
 N = 3
-V_min = 2
-V_max = 1.7976931348623157e+308 - 1.0
 m = 64
-T_v = 8
-
-
-time_arr = []
+dtypeInfo = np.finfo(arrType)
+if (arrType == np.float32):
+    m = 32
+if (arrType == np.float16):
+    m = 16
+T_v = None
+V_min = 2
+V_max = dtypeInfo.max
+downsize_times = []
 
 def numpy_gauss_blur(kernel, arr):
     """Function that applies a Guassian Blur using only Numpy"""
@@ -76,6 +80,7 @@ def zipfian_sigma_delta_update(I_t, M_t, V_t, E_t, t):
     return (E_t, M_t, V_t)
 
 def basic_sigma_delta_driver():
+    time_arr = []
     I = deque()
     M_t, V_t = None, None
     video = cv2.VideoCapture('ball.mp4')
@@ -87,12 +92,17 @@ def basic_sigma_delta_driver():
         #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         # Recevied new frame, call update step
         #I.append(frame)
+        frame = cv2.resize(frame, (frame.shape[1] // 2, int(frame.shape[0] / 1.5))) # resize to 480x640 for benchmarking purposes
         start = time.perf_counter()
-        I.append(cv2.resize(frame, (frame.shape[1] // 5, frame.shape[0] // 5)))
+        frame = cv2.resize(frame, (int(frame.shape[1] / 2.5), int(frame.shape[0] / 2.5)))
+        #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        #print("frame dtype:", frame.info)
+        downsize_times.append(time.perf_counter() - start)
+        I.append(frame)
         # First iteration book keeping
         if M_t is None:
-            M_t = np.ndarray.astype(gaussian_filter(I[-1], 1), np.float64)
-            V_t = np.zeros(M_t.shape, dtype=np.float64)
+            M_t = np.ndarray.astype(gaussian_filter(I[-1], 1), arrType)
+            V_t = np.zeros(M_t.shape, dtype=arrType)
         
         
         E_t, M_t, V_t = basic_sigma_delta_update(I[-1], M_t, V_t)
@@ -101,15 +111,16 @@ def basic_sigma_delta_driver():
         time_arr.append(diff)
 
 
-        cv2.imshow('motion', cv2.resize(E_t, (E_t.shape[1] * 5, E_t.shape[0] * 5)))
-        if cv2.waitKey(30) & 0xFF == ord('q'):
-            break
-    video.release()
-    cv2.destroyAllWindows()
+    #     cv2.imshow('motion', cv2.resize(E_t, (E_t.shape[1] * 5, E_t.shape[0] * 5)))
+    #     if cv2.waitKey(30) & 0xFF == ord('q'):
+    #         break
+    # video.release()
+    # cv2.destroyAllWindows()
 
     print("average frame processing time: ", np.average(np.array(time_arr)))
 
 def conditional_sigma_delta_driver():
+    time_arr = []
     I = deque()
     M_t, V_t, E_t = None, None, None
     video = cv2.VideoCapture('ball.mp4')
@@ -119,13 +130,16 @@ def conditional_sigma_delta_driver():
         if not ret:
             break
         # Recevied new frame, call update step
+        frame = cv2.resize(frame, (frame.shape[1] // 2, int(frame.shape[0] / 1.5))) # resize to 480x640 for benchmarking purpose
         start = time.perf_counter()
-        I.append(cv2.resize(frame, (frame.shape[1] // 5, frame.shape[0] // 5)))
+        frame = cv2.resize(frame, (int(frame.shape[1] / 2.5), int(frame.shape[0] / 2.5)))
+        downsize_times.append(time.perf_counter() - start)
+        I.append(frame)
         # First iteration book keeping
         if M_t is None:
-            M_t = np.ndarray.astype(gaussian_filter(I[-1], 1), np.float64)
-            V_t = np.zeros(M_t.shape, dtype=np.float64)
-            E_t = np.zeros(M_t.shape, dtype=np.float64)
+            M_t = np.ndarray.astype(gaussian_filter(I[-1], 1), arrType)
+            V_t = np.zeros(M_t.shape, dtype=arrType)
+            E_t = np.zeros(M_t.shape, dtype=arrType)
         
         E_t, M_t, V_t = conditional_sigma_delta_update(I[-1], M_t, V_t, E_t)
         diff = time.perf_counter() - start
@@ -133,15 +147,16 @@ def conditional_sigma_delta_driver():
         time_arr.append(diff)
 
 
-        cv2.imshow('motion', cv2.resize(E_t, (E_t.shape[1] * 5, E_t.shape[0] * 5)))
-        if cv2.waitKey(30) & 0xFF == ord('q'):
-            break
-    video.release()
-    cv2.destroyAllWindows()
+    #     cv2.imshow('motion', cv2.resize(E_t, (E_t.shape[1] * 5, E_t.shape[0] * 5)))
+    #     if cv2.waitKey(30) & 0xFF == ord('q'):
+    #         break
+    # video.release()
+    # cv2.destroyAllWindows()
 
     print("average frame processing time: ", np.average(np.array(time_arr)))
 
 def zipfian_sigma_delta_driver():
+    time_arr = []
     I = deque()
     M_t, V_t, E_t = None, None, None
     video = cv2.VideoCapture('ball.mp4')
@@ -151,13 +166,17 @@ def zipfian_sigma_delta_driver():
         if not ret:
             break
         # Recevied new frame, call update step
+        frame = cv2.resize(frame, (frame.shape[1] // 2, int(frame.shape[0] / 1.5))) # resize to 480x640 for benchmarking purpose
         start = time.perf_counter()
-        I.append(cv2.resize(frame, (frame.shape[1] // 5, frame.shape[0] // 5)))
+        frame = cv2.resize(frame, (int(frame.shape[1] / 4), int(frame.shape[0] / 4))) # downscale to 120x160 to increase performance
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        downsize_times.append(time.perf_counter() - start)
+        I.append(frame)
         # First iteration book keeping
         if M_t is None:
-            M_t = np.ndarray.astype(gaussian_filter(I[-1], 1), np.float64)
-            V_t = np.zeros(M_t.shape, dtype=np.float64)
-            E_t = np.zeros(M_t.shape, dtype=np.float64)
+            M_t = np.ndarray.astype(gaussian_filter(I[-1], 1), arrType)
+            V_t = np.zeros(M_t.shape, dtype=arrType)
+            E_t = np.zeros(M_t.shape, dtype=arrType)
         
         E_t, M_t, V_t = zipfian_sigma_delta_update(I[-1], M_t, V_t, E_t, len(I))
         diff = time.perf_counter() - start
@@ -165,13 +184,13 @@ def zipfian_sigma_delta_driver():
         time_arr.append(diff)
 
 
-        cv2.imshow('motion', cv2.resize(E_t, (E_t.shape[1] * 5, E_t.shape[0] * 5)))
-        if cv2.waitKey(30) & 0xFF == ord('q'):
-            break
-    video.release()
-    cv2.destroyAllWindows()
-
-    print("average frame processing time: ", np.average(np.array(time_arr)))
+    #     cv2.imshow('motion', cv2.resize(E_t, (E_t.shape[1] * 5, E_t.shape[0] * 5)))
+    #     if cv2.waitKey(30) & 0xFF == ord('q'):
+    #         break
+    # video.release()
+    # cv2.destroyAllWindows()
+    avg = np.average(np.array(time_arr))
+    print("average frame processing time:", avg, "average FPS:", 1/avg)
 
 def test_blur():
     img = cv2.imread("hubble_galaxies.jpg")
@@ -213,6 +232,10 @@ def test_blur():
 if __name__ == "__main__":
     #print("time to run basic: ", timeit.timeit("basic_sigma_delta_driver()", 'from __main__ import basic_sigma_delta_driver', number=1))
     #print("time to run conditional: ", timeit.timeit("conditional_sigma_delta_driver()", 'from __main__ import conditional_sigma_delta_driver', number=1))
-    basic_sigma_delta_driver()
-    conditional_sigma_delta_driver()
-    zipfian_sigma_delta_driver()
+    # basic_sigma_delta_driver()
+    # conditional_sigma_delta_driver()
+    for i in range(0, 7):
+        T_v = 2**i
+        print("Period Value:", T_v)
+        zipfian_sigma_delta_driver()
+        print("average frame downsizing time: ", np.average(np.array(downsize_times)))
