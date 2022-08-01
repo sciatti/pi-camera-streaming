@@ -1,0 +1,1 @@
+use command sudo apt-get install libatlas-base-dev to fix the default installations of scipy on raspberry pi
